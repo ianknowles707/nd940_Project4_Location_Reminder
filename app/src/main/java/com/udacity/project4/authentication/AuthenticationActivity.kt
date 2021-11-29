@@ -50,7 +50,7 @@ class AuthenticationActivity : AppCompatActivity() {
             AuthUI.IdpConfig.GoogleBuilder().build()
         )
         //Set custom layout for sign-in screen
-        var customLogin = AuthMethodPickerLayout
+        val customLogin = AuthMethodPickerLayout
             .Builder(R.layout.authenticate_custom_layout)
             .setGoogleButtonId(R.id.google_login_provider)
             .setEmailButtonId(R.id.email_login_provider)
@@ -64,7 +64,7 @@ class AuthenticationActivity : AppCompatActivity() {
                 .setAvailableProviders(providers)
                 .setAuthMethodPickerLayout(customLogin)
                 .build(),
-            AuthenticationActivity.SIGN_IN_REQUEST
+            SIGN_IN_REQUEST
         )
     }
 

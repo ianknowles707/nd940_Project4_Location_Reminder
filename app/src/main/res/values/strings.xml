@@ -43,4 +43,6 @@
     <string name="login_button_text">Sign-Up / Login</string>
     <string name="google_provider">Sign in with Google</string>
     <string name="email_provider">Sign in with email</string>
+    <string name="night_city_image_description">night_city_image</string>
+    <string name="reminder_details">Reminder Details</string>
 </resources>
