@@ -1,7 +1,9 @@
 package com.udacity.project4.locationreminders.savereminder.selectreminderlocation
 
 
+import android.content.res.Resources
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import androidx.databinding.DataBindingUtil
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -9,6 +11,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.gms.maps.model.MarkerOptions
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
@@ -23,7 +26,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     override val _viewModel: SaveReminderViewModel by inject()
     private lateinit var binding: FragmentSelectLocationBinding
 
-    private lateinit var map: GoogleMap
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -37,13 +39,14 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         setHasOptionsMenu(true)
         setDisplayHomeAsUpEnabled(true)
 
+        //Initialize map
         val mapFragment = childFragmentManager
             .findFragmentById(R.id.map_display) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-//        TODO: add the map setup implementation
+
 //        TODO: zoom to the user location after taking his permission
-//        TODO: add style to the map
+
 //        TODO: put a marker to location that the user selected
 
 
@@ -53,13 +56,32 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         return binding.root
     }
 
-    //Set up the map
-    override fun onMapReady(map: GoogleMap?) {
+    //Set up the map - initially just define a position for start
+    override fun onMapReady(map: GoogleMap) {
         val home = LatLng(45.45, -73.59)
         val zoom = 15f
 
-        map?.addMarker(MarkerOptions().position(home).title("Home"))
-        map?.moveCamera(CameraUpdateFactory.newLatLngZoom(home,zoom))
+        map.addMarker(MarkerOptions().position(home).title("Home"))
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(home, zoom))
+
+        setMapStyle(map)
+    }
+
+    //Apply custom map style from JSON file
+    private fun setMapStyle(map: GoogleMap) {
+        try {
+            val mapStyled = map.setMapStyle(
+                MapStyleOptions.loadRawResourceStyle(
+                    context,
+                    R.raw.map_style
+                )
+            )
+            if(!mapStyled) {
+                Log.e("map: ", "Failed to add style")
+            }
+        } catch (e: Resources.NotFoundException) {
+            Log.e("map: ", "Error: ", e)
+        }
     }
 
 
