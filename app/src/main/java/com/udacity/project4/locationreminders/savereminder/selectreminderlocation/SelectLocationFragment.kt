@@ -1,11 +1,15 @@
 package com.udacity.project4.locationreminders.savereminder.selectreminderlocation
 
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.os.Bundle
 import android.util.Log
 import android.view.*
+import androidx.core.app.ActivityCompat
 import androidx.databinding.DataBindingUtil
+import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -19,6 +23,7 @@ import com.udacity.project4.databinding.FragmentSelectLocationBinding
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
+
 
 class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
@@ -61,10 +66,15 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         val home = LatLng(45.45, -73.59)
         val zoom = 15f
 
+        //check location permissions
+        val locationPermissionsGranted = isForegroundAndBackgroundPermissionGranted()
+        Log.i("map: ", "Permissions granted: $locationPermissionsGranted")
         map.addMarker(MarkerOptions().position(home).title("Home"))
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(home, zoom))
 
         setMapStyle(map)
+
+
     }
 
     //Apply custom map style from JSON file
@@ -76,7 +86,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                     R.raw.map_style
                 )
             )
-            if(!mapStyled) {
+            if (!mapStyled) {
                 Log.e("map: ", "Failed to add style")
             }
         } catch (e: Resources.NotFoundException) {
@@ -84,6 +94,40 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         }
     }
 
+    //Check to see if permissions are granted or not. Returns TRUE if all needed
+    //permissions are already granted, of FALSE if permission needs to be requested
+    private fun isForegroundAndBackgroundPermissionGranted(): Boolean {
+        val foreground = isForegroundPermissionGranted()
+        val background = isBackgroundPermissionGranted()
+        return background && foreground
+    }
+
+    //Check if foreground location permission already granted
+    private fun isForegroundPermissionGranted(): Boolean {
+        return (
+                PackageManager.PERMISSION_GRANTED ==
+                        ActivityCompat.checkSelfPermission(
+                            requireContext(),
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                        )
+                )
+    }
+
+    //Check if background location permission already granted
+    private fun isBackgroundPermissionGranted(): Boolean {
+        val backgroundLocationApproved = (
+                //Background location permission only required for Android Q and above
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(
+                        requireContext(),
+                        Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                    )
+                } else {
+                    true
+                }
+                )
+        return backgroundLocationApproved
+    }
 
     private fun onLocationSelected() {
         //        TODO: When the user confirms on the selected location,
