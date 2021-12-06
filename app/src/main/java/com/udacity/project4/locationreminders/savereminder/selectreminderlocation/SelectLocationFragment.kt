@@ -40,6 +40,8 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     override val _viewModel: SaveReminderViewModel by inject()
     private lateinit var binding: FragmentSelectLocationBinding
 
+    private lateinit var map: GoogleMap
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
@@ -58,11 +60,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         mapFragment.getMapAsync(this)
 
 
-//        TODO: zoom to the user location after taking his permission
-
-//        TODO: put a marker to location that the user selected
-
-
 //        TODO: call this function after the user confirms on the selected location
         onLocationSelected()
 
@@ -70,7 +67,8 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     }
 
     //Set up the map - initially just define a position for start
-    override fun onMapReady(map: GoogleMap) {
+    override fun onMapReady(newMap: GoogleMap) {
+        map = newMap
         val home = LatLng(45.45, -73.59)
         val zoom = 15f
 
@@ -87,14 +85,15 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         //Check that the device location settings is enabled and resolve this if not
         checkDeviceLocationSettings()
 
-        if(locationPermissionsGranted) {
+        if (locationPermissionsGranted) {
             setDeviceLocation(map)
         }
 
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(home, zoom))
+        newMap.moveCamera(CameraUpdateFactory.newLatLngZoom(home, zoom))
 
         setMapStyle(map)
 
+        setLocationMarker(map)
 
     }
 
@@ -155,11 +154,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     private fun requestForegroundLocationPermission() {
         val permissionsArray = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
         val requestCode = REQUEST_FOREGROUND_ONLY
-        ActivityCompat.requestPermissions(
-            requireActivity(),
-            permissionsArray,
-            requestCode
-        )
+        requestPermissions(permissionsArray, requestCode)
     }
 
     //Background location will only be requested after foreground is granted, as this
@@ -168,11 +163,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     private fun requestBackgroundLocationPosition() {
         val permissionArray = arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
         val requestCode = REQUEST_BACKGROUND_ONLY
-        ActivityCompat.requestPermissions(
-            requireActivity(),
-            permissionArray,
-            requestCode
-        )
+        requestPermissions(permissionArray, requestCode)
     }
 
     //Respond to the permission request result. If Foreground request approved, request
@@ -205,7 +196,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                 Toast.makeText(
                     requireContext(),
                     "Background location permission granted",
-                    Toast.LENGTH_SHORT
+                    Toast.LENGTH_LONG
                 ).show()
             } else if (grantResults.isNotEmpty() && (grantResults[0] ==
                         PackageManager.PERMISSION_DENIED)
@@ -213,7 +204,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                 Toast.makeText(
                     requireContext(),
                     "App requires background location permission. Check settings.",
-                    Toast.LENGTH_SHORT
+                    Toast.LENGTH_LONG
                 ).show()
             }
         }
@@ -276,6 +267,21 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         map.isMyLocationEnabled = true
     }
 
+    private fun setLocationMarker(map: GoogleMap) {
+        map.setOnMapLongClickListener {
+            val displayedLocation= String.format(
+                "Lat: %1.3f, Long: %2.3f",
+                it.latitude,
+                it.longitude
+            )
+            map.addMarker(
+                MarkerOptions().position(it)
+                    .title(getString(R.string.dropped_pin))
+                    .snippet(displayedLocation)
+            )
+        }
+    }
+
     private fun onLocationSelected() {
         //        TODO: When the user confirms on the selected location,
         //         send back the selected location details to the view model
@@ -288,17 +294,21 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     }
 
     override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
-        // TODO: Change the map type based on the user's selection.
+
         R.id.normal_map -> {
+            map.mapType = GoogleMap.MAP_TYPE_NORMAL
             true
         }
         R.id.hybrid_map -> {
+            map.mapType = GoogleMap.MAP_TYPE_HYBRID
             true
         }
         R.id.satellite_map -> {
+            map.mapType = GoogleMap.MAP_TYPE_SATELLITE
             true
         }
         R.id.terrain_map -> {
+            map.mapType = GoogleMap.MAP_TYPE_TERRAIN
             true
         }
         else -> super.onOptionsItemSelected(item)
@@ -309,6 +319,5 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         const val REQUEST_BACKGROUND_ONLY = 888
         const val REQUEST_TURN_DEVICE_LOCATION_ON = 222
     }
-
 
 }
