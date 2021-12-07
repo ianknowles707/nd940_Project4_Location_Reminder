@@ -91,9 +91,12 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
         setMapStyle(map)
 
+        //NOT WORKING TO BE RESOLVED
         map.uiSettings.isZoomControlsEnabled = true
 
         setPoiMarker(map)
+
+        setLocationMarker(map)
     }
 
     //Apply custom map style from JSON file
@@ -309,9 +312,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     }
 
     private fun onLocationSelected() {
-        //        TODO: When the user confirms on the selected location,
-        //         send back the selected location details to the view model
-        //         and navigate back to the previous fragment to save the reminder and add the geofence
         _viewModel.navigationCommand.value =
             NavigationCommand.To(
                 SelectLocationFragmentDirections
