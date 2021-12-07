@@ -28,6 +28,7 @@ import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.gms.maps.model.MarkerOptions
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
+import com.udacity.project4.base.NavigationCommand
 import com.udacity.project4.databinding.FragmentSelectLocationBinding
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
@@ -59,9 +60,9 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             .findFragmentById(R.id.map_display) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-
-//        TODO: call this function after the user confirms on the selected location
-        onLocationSelected()
+        binding.saveButton.setOnClickListener {
+            onLocationSelected()
+        }
 
         return binding.root
     }
@@ -93,8 +94,11 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
         setMapStyle(map)
 
+        //map.uiSettings.isZoomControlsEnabled = true
+
         setLocationMarker(map)
 
+        setPoiMarker(map)
     }
 
     //Apply custom map style from JSON file
@@ -267,9 +271,11 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         map.isMyLocationEnabled = true
     }
 
+    //Allow user to select any Lat/Lng as reminder location
     private fun setLocationMarker(map: GoogleMap) {
         map.setOnMapLongClickListener {
-            val displayedLocation= String.format(
+            map.clear()
+            val displayedLocation = String.format(
                 "Lat: %1.3f, Long: %2.3f",
                 it.latitude,
                 it.longitude
@@ -279,6 +285,31 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                     .title(getString(R.string.dropped_pin))
                     .snippet(displayedLocation)
             )
+            _viewModel.reminderSelectedLocationStr.value = getString(R.string.user_defined)
+            _viewModel.latitude.value = it.latitude
+            _viewModel.longitude.value = it.longitude
+
+            //Save location only enabled after a location is selected
+            binding.saveButton.isEnabled = true
+        }
+    }
+
+    //Allow user to select a POI as the reminder location
+    private fun setPoiMarker(map: GoogleMap) {
+        map.setOnPoiClickListener {
+            map.clear()
+            val poiMarker = map.addMarker(
+                MarkerOptions()
+                    .position(it.latLng)
+                    .title(it.name)
+            )
+            poiMarker.showInfoWindow()
+            _viewModel.reminderSelectedLocationStr.value = it.name
+            _viewModel.latitude.value = it.latLng.latitude
+            _viewModel.longitude.value = it.latLng.longitude
+
+            //Save location only enabled after a location is selected
+            binding.saveButton.isEnabled = true
         }
     }
 
@@ -286,6 +317,11 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         //        TODO: When the user confirms on the selected location,
         //         send back the selected location details to the view model
         //         and navigate back to the previous fragment to save the reminder and add the geofence
+        _viewModel.navigationCommand.value =
+            NavigationCommand.To(
+                SelectLocationFragmentDirections
+                    .actionSelectLocationFragmentToSaveReminderFragment()
+            )
     }
 
 
