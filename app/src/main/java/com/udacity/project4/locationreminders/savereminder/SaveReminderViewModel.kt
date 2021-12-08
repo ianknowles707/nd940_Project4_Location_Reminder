@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
 import android.app.PendingIntent
-import android.content.Context
 import android.content.Intent
 import android.util.Log
 import android.widget.Toast
@@ -105,7 +104,7 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
     @SuppressLint("MissingPermission")
     private fun setGeofenceForReminder(reminderData: ReminderDataItem) {
 
-        geofencingClient = LocationServices.getGeofencingClient(Activity().applicationContext)
+        geofencingClient = LocationServices.getGeofencingClient(withContext())
 
         val geofenceForReminder = Geofence.Builder()
             .setRequestId(reminderData.id)
@@ -126,8 +125,6 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
             val intent = Intent()
             PendingIntent.getBroadcast(Activity(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
         }
-
-        geofencingClient = LocationServices.getGeofencingClient(Activity())
 
         geofencingClient.addGeofences(geofencingRequest, geofencePendingIntent)?.run {
             addOnSuccessListener {
