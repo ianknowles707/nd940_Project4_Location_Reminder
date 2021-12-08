@@ -1,11 +1,19 @@
 package com.udacity.project4.locationreminders.savereminder
 
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.Application
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.Geofence
+import com.google.android.gms.location.GeofencingClient
 import com.google.android.gms.location.GeofencingRequest
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.PointOfInterest
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseViewModel
@@ -14,6 +22,7 @@ import com.udacity.project4.locationreminders.data.ReminderDataSource
 import com.udacity.project4.locationreminders.data.dto.ReminderDTO
 import com.udacity.project4.locationreminders.reminderslist.ReminderDataItem
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSource) :
     BaseViewModel(app) {
@@ -23,6 +32,8 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
     val selectedPOI = MutableLiveData<PointOfInterest>()
     val latitude = MutableLiveData<Double>()
     val longitude = MutableLiveData<Double>()
+
+    private lateinit var geofencingClient: GeofencingClient
 
     companion object {
         const val GEOFENCE_AREA = 100f
@@ -91,7 +102,11 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
         }
     }
 
+    @SuppressLint("MissingPermission")
     private fun setGeofenceForReminder(reminderData: ReminderDataItem) {
+
+        geofencingClient = LocationServices.getGeofencingClient(Activity().applicationContext)
+
         val geofenceForReminder = Geofence.Builder()
             .setRequestId(reminderData.id)
             .setCircularRegion(
@@ -106,6 +121,32 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
             .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
             .addGeofence(geofenceForReminder)
             .build()
+
+        val geofencePendingIntent: PendingIntent by lazy {
+            val intent = Intent()
+            PendingIntent.getBroadcast(Activity(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+        }
+
+        geofencingClient = LocationServices.getGeofencingClient(Activity())
+
+        geofencingClient.addGeofences(geofencingRequest, geofencePendingIntent)?.run {
+            addOnSuccessListener {
+                Toast.makeText(
+                    Activity(), "Geofence added to reminder location",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+            }
+
+            addOnFailureListener {
+                Toast.makeText(
+                    Activity(), "Geofence failed",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+                Log.i("Geofence: ", "Error: ${it.message}")
+            }
+        }
 
 
     }
