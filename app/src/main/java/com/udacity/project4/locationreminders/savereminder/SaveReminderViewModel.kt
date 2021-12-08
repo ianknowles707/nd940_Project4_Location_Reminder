@@ -4,6 +4,8 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.location.Geofence
+import com.google.android.gms.location.GeofencingRequest
 import com.google.android.gms.maps.model.PointOfInterest
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseViewModel
@@ -21,6 +23,11 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
     val selectedPOI = MutableLiveData<PointOfInterest>()
     val latitude = MutableLiveData<Double>()
     val longitude = MutableLiveData<Double>()
+
+    companion object {
+        const val GEOFENCE_AREA = 100f
+    }
+
 
     /**
      * Clear the live data objects to start fresh next time the view model gets called
@@ -73,6 +80,7 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
                     reminderData.id
                 )
             )
+            setGeofenceForReminder(reminderData)
             showLoading.value = false
             showToast.value = app.getString(R.string.reminder_saved)
             navigationCommand.value =
@@ -81,6 +89,25 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
                         .actionSaveReminderFragmentToReminderListFragment()
                 )
         }
+    }
+
+    private fun setGeofenceForReminder(reminderData: ReminderDataItem) {
+        val geofenceForReminder = Geofence.Builder()
+            .setRequestId(reminderData.id)
+            .setCircularRegion(
+                reminderData.latitude!!,
+                reminderData.longitude!!,
+                GEOFENCE_AREA
+            )
+            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
+            .build()
+
+        val geofencingRequest = GeofencingRequest.Builder()
+            .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+            .addGeofence(geofenceForReminder)
+            .build()
+
+
     }
 
     /**

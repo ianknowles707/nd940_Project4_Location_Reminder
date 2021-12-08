@@ -1,5 +1,7 @@
 package com.udacity.project4.locationreminders
 
+import android.app.PendingIntent
+import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
@@ -7,12 +9,20 @@ import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.navigation.fragment.NavHostFragment
 import com.firebase.ui.auth.AuthUI
 import com.udacity.project4.R
+import com.udacity.project4.locationreminders.geofence.GeofenceBroadcastReceiver
 import kotlinx.android.synthetic.main.activity_reminders.*
 
 /**
  * The RemindersActivity that holds the reminders fragments
  */
 class RemindersActivity : AppCompatActivity() {
+
+    private val geofencePendingIntent: PendingIntent by lazy {
+        val intent = Intent(this, GeofenceBroadcastReceiver::class.java)
+        PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+    }
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
