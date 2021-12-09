@@ -21,7 +21,6 @@ import com.udacity.project4.locationreminders.data.ReminderDataSource
 import com.udacity.project4.locationreminders.data.dto.ReminderDTO
 import com.udacity.project4.locationreminders.reminderslist.ReminderDataItem
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSource) :
     BaseViewModel(app) {
@@ -33,6 +32,8 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
     val longitude = MutableLiveData<Double>()
 
     private lateinit var geofencingClient: GeofencingClient
+
+    private var context = app.applicationContext
 
     companion object {
         const val GEOFENCE_AREA = 100f
@@ -104,7 +105,7 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
     @SuppressLint("MissingPermission")
     private fun setGeofenceForReminder(reminderData: ReminderDataItem) {
 
-        geofencingClient = LocationServices.getGeofencingClient(withContext())
+        geofencingClient = LocationServices.getGeofencingClient(context)
 
         val geofenceForReminder = Geofence.Builder()
             .setRequestId(reminderData.id)
@@ -113,6 +114,7 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
                 reminderData.longitude!!,
                 GEOFENCE_AREA
             )
+            .setExpirationDuration(Geofence.NEVER_EXPIRE)
             .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
             .build()
 
