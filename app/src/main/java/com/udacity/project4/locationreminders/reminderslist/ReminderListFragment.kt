@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.*
 import androidx.databinding.DataBindingUtil
+import androidx.navigation.fragment.findNavController
 import com.firebase.ui.auth.AuthUI
 import com.google.firebase.auth.FirebaseAuth
 import com.udacity.project4.R
@@ -91,6 +92,14 @@ class ReminderListFragment : BaseFragment() {
                         FirebaseAuth.getInstance().currentUser?.displayName
                     } "
                 )
+            }
+            R.id.clear->{
+                _viewModel.deleteAllReminders()
+                val navigationController=findNavController()
+                navigationController.run{
+                    popBackStack()
+                    navigate(R.id.reminderListFragment)
+                }
             }
         }
         return super.onOptionsItemSelected(item)
