@@ -1,15 +1,20 @@
 package com.udacity.project4.locationreminders.savereminder
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.PendingIntent
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.core.app.ActivityCompat
 import androidx.databinding.DataBindingUtil
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingClient
@@ -20,6 +25,7 @@ import com.udacity.project4.base.BaseFragment
 import com.udacity.project4.base.NavigationCommand
 import com.udacity.project4.databinding.FragmentSaveReminderBinding
 import com.udacity.project4.locationreminders.reminderslist.ReminderDataItem
+import com.udacity.project4.locationreminders.savereminder.selectreminderlocation.SelectLocationFragment
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
 
@@ -61,9 +67,110 @@ class SaveReminderFragment : BaseFragment() {
                 _viewModel.latitude.value,
                 _viewModel.longitude.value
             )
-
             _viewModel.validateAndSaveReminder(reminderData)
-            //setGeofenceForReminder()
+            if (requiredPermissionsAreGranted()) {
+                //setGeofenceForReminder()
+                Log.i("Permissions: ", "OK")
+            } else {
+                Log.i("Permission error: ", "Not granted")
+            }
+        }
+
+    }
+
+    private fun requiredPermissionsAreGranted() : Boolean{
+        val foreground=isForegroundPermissionGranted()
+        val background=isBackgroundPermissionGranted()
+        Log.i("Permissions: ", "Foreground: $foreground; Background: $background")
+        return isForegroundPermissionGranted() &&
+                isBackgroundPermissionGranted()
+    }
+
+    //Check if foreground location permission already granted
+    private fun isForegroundPermissionGranted(): Boolean {
+        return (
+                PackageManager.PERMISSION_GRANTED ==
+                        ActivityCompat.checkSelfPermission(
+                            requireContext(),
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                        )
+                )
+    }
+
+    //Check if background location permission already granted
+    private fun isBackgroundPermissionGranted(): Boolean {
+        val backgroundLocationApproved = (
+                //Background location permission only required for Android Q and above
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(
+                        requireContext(),
+                        Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                    )
+                } else {
+                    true
+                }
+                )
+        return backgroundLocationApproved
+    }
+
+    //Request foreground location permissions. Request for background location will
+    //ONLY be made if foreground is granted, and only for Version Q and above
+    private fun requestForegroundLocationPermission() {
+        val permissionsArray = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        val requestCode = SelectLocationFragment.REQUEST_FOREGROUND_ONLY
+        requestPermissions(permissionsArray, requestCode)
+    }
+
+    //Background location will only be requested after foreground is granted, as this
+    //is now a requirement in API 30
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun requestBackgroundLocationPosition() {
+        val permissionArray = arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        val requestCode = SelectLocationFragment.REQUEST_BACKGROUND_ONLY
+        requestPermissions(permissionArray, requestCode)
+    }
+
+    //Respond to the permission request result. If Foreground request approved, request
+    //background. If not, show message that it is needed for app functionality
+    @RequiresApi(Build.VERSION_CODES.Q)
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == SelectLocationFragment.REQUEST_FOREGROUND_ONLY) {
+            if (grantResults.isNotEmpty() && (grantResults[0] ==
+                        PackageManager.PERMISSION_GRANTED)
+            ) {
+                //requestBackgroundLocationPosition()
+            } else if (grantResults.isNotEmpty() && (grantResults[0] ==
+                        PackageManager.PERMISSION_DENIED)
+            ) {
+                Toast.makeText(
+                    requireContext(),
+                    "App requires location permission. Check settings.",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        } else if (requestCode == SelectLocationFragment.REQUEST_BACKGROUND_ONLY) {
+            if (grantResults.isNotEmpty() && (grantResults[0] ==
+                        PackageManager.PERMISSION_GRANTED)
+            ) {
+                Toast.makeText(
+                    requireContext(),
+                    "Background location permission granted",
+                    Toast.LENGTH_LONG
+                ).show()
+            } else if (grantResults.isNotEmpty() && (grantResults[0] ==
+                        PackageManager.PERMISSION_DENIED)
+            ) {
+                Toast.makeText(
+                    requireContext(),
+                    "App requires background location permission. Check settings.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         }
     }
 

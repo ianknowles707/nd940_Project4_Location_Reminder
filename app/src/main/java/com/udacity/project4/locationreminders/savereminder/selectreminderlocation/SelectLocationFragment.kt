@@ -66,12 +66,12 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         binding.saveButton.setOnClickListener {
             onLocationSelected()
         }
-
         return binding.root
     }
 
     //Set up the map - initially just define a position for start
     override fun onMapReady(newMap: GoogleMap) {
+
         map = newMap
         fusedLocationProviderClient = LocationServices
             .getFusedLocationProviderClient(context!!)
@@ -114,14 +114,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         }
     }
 
-    //Check to see if permissions are granted or not. Returns TRUE if all needed
-    //permissions are already granted, of FALSE if permission needs to be requested
-    private fun isForegroundAndBackgroundPermissionGranted(): Boolean {
-        val foreground = isForegroundPermissionGranted()
-        val background = isBackgroundPermissionGranted()
-        return background && foreground
-    }
-
     //Check if foreground location permission already granted
     private fun isForegroundPermissionGranted(): Boolean {
         return (
@@ -133,37 +125,12 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                 )
     }
 
-    //Check if background location permission already granted
-    private fun isBackgroundPermissionGranted(): Boolean {
-        val backgroundLocationApproved = (
-                //Background location permission only required for Android Q and above
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(
-                        requireContext(),
-                        Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                    )
-                } else {
-                    true
-                }
-                )
-        return backgroundLocationApproved
-    }
-
     //Request foreground location permissions. Request for background location will
     //ONLY be made if foreground is granted
     private fun requestForegroundLocationPermission() {
         val permissionsArray = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
         val requestCode = REQUEST_FOREGROUND_ONLY
         requestPermissions(permissionsArray, requestCode)
-    }
-
-    //Background location will only be requested after foreground is granted, as this
-    //is now a requirement in API 30
-    @RequiresApi(Build.VERSION_CODES.Q)
-    private fun requestBackgroundLocationPosition() {
-        val permissionArray = arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-        val requestCode = REQUEST_BACKGROUND_ONLY
-        requestPermissions(permissionArray, requestCode)
     }
 
     //Respond to the permission request result. If Foreground request approved, request
@@ -180,7 +147,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                         PackageManager.PERMISSION_GRANTED)
             ) {
                 setDeviceLocation(map)
-                //requestBackgroundLocationPosition()
             } else if (grantResults.isNotEmpty() && (grantResults[0] ==
                         PackageManager.PERMISSION_DENIED)
             ) {
@@ -188,24 +154,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                     requireContext(),
                     "App requires location permission. Check settings.",
                     Toast.LENGTH_SHORT
-                ).show()
-            }
-        } else if (requestCode == REQUEST_BACKGROUND_ONLY) {
-            if (grantResults.isNotEmpty() && (grantResults[0] ==
-                        PackageManager.PERMISSION_GRANTED)
-            ) {
-                Toast.makeText(
-                    requireContext(),
-                    "Background location permission granted",
-                    Toast.LENGTH_LONG
-                ).show()
-            } else if (grantResults.isNotEmpty() && (grantResults[0] ==
-                        PackageManager.PERMISSION_DENIED)
-            ) {
-                Toast.makeText(
-                    requireContext(),
-                    "App requires background location permission. Check settings.",
-                    Toast.LENGTH_LONG
                 ).show()
             }
         }
