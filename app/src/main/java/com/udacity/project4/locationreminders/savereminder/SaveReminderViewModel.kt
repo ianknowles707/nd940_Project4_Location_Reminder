@@ -1,18 +1,10 @@
 package com.udacity.project4.locationreminders.savereminder
 
-import android.annotation.SuppressLint
-import android.app.Activity
 import android.app.Application
-import android.app.PendingIntent
-import android.content.Intent
 import android.util.Log
-import android.widget.Toast
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingClient
-import com.google.android.gms.location.GeofencingRequest
-import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.PointOfInterest
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseViewModel
@@ -30,10 +22,6 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
     val selectedPOI = MutableLiveData<PointOfInterest>()
     val latitude = MutableLiveData<Double>()
     val longitude = MutableLiveData<Double>()
-
-    private lateinit var geofencingClient: GeofencingClient
-
-    private var context = app.applicationContext
 
     companion object {
         const val GEOFENCE_AREA = 100f
@@ -56,18 +44,7 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
      * Validate the entered data then saves the reminder data to the DataSource
      */
 
-    fun provideDataInput() {
-        val reminderData = ReminderDataItem(
-            reminderTitle.value,
-            reminderDescription.value,
-            reminderSelectedLocationStr.value,
-            latitude.value,
-            longitude.value
-        )
-        validateAndSaveReminder(reminderData)
-    }
-
-    private fun validateAndSaveReminder(reminderData: ReminderDataItem) {
+    fun validateAndSaveReminder(reminderData: ReminderDataItem) {
         if (validateEnteredData(reminderData)) {
             saveReminder(reminderData)
         } else {
@@ -91,7 +68,6 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
                     reminderData.id
                 )
             )
-            setGeofenceForReminder(reminderData)
             showLoading.value = false
             showToast.value = app.getString(R.string.reminder_saved)
             navigationCommand.value =
@@ -102,53 +78,6 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
         }
     }
 
-    @SuppressLint("MissingPermission")
-    private fun setGeofenceForReminder(reminderData: ReminderDataItem) {
-
-        geofencingClient = LocationServices.getGeofencingClient(context)
-
-        val geofenceForReminder = Geofence.Builder()
-            .setRequestId(reminderData.id)
-            .setCircularRegion(
-                reminderData.latitude!!,
-                reminderData.longitude!!,
-                GEOFENCE_AREA
-            )
-            .setExpirationDuration(Geofence.NEVER_EXPIRE)
-            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
-            .build()
-
-        val geofencingRequest = GeofencingRequest.Builder()
-            .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
-            .addGeofence(geofenceForReminder)
-            .build()
-
-        val geofencePendingIntent: PendingIntent by lazy {
-            val intent = Intent()
-            PendingIntent.getBroadcast(Activity(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
-        }
-
-        geofencingClient.addGeofences(geofencingRequest, geofencePendingIntent)?.run {
-            addOnSuccessListener {
-                Toast.makeText(
-                    Activity(), "Geofence added to reminder location",
-                    Toast.LENGTH_SHORT
-                )
-                    .show()
-            }
-
-            addOnFailureListener {
-                Toast.makeText(
-                    Activity(), "Geofence failed",
-                    Toast.LENGTH_SHORT
-                )
-                    .show()
-                Log.i("Geofence: ", "Error: ${it.message}")
-            }
-        }
-
-
-    }
 
     /**
      * Validate the entered data and show error to the user if there's any invalid data
@@ -167,4 +96,5 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
         }
         return true
     }
+
 }

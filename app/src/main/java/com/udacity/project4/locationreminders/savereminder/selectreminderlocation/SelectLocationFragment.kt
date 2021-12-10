@@ -16,10 +16,14 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.databinding.DataBindingUtil
 import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.LocationSettingsRequest
-import com.google.android.gms.maps.*
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.gms.maps.model.MarkerOptions
@@ -37,8 +41,10 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     //Use Koin to get the view model of the SaveReminder
     override val _viewModel: SaveReminderViewModel by inject()
     private lateinit var binding: FragmentSelectLocationBinding
+    private val zoom = 15f
 
     private lateinit var map: GoogleMap
+    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -60,38 +66,30 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         binding.saveButton.setOnClickListener {
             onLocationSelected()
         }
-
         return binding.root
     }
 
     //Set up the map - initially just define a position for start
     override fun onMapReady(newMap: GoogleMap) {
+
         map = newMap
-        val home = LatLng(45.45, -73.59)
-        val zoom = 15f
+        fusedLocationProviderClient = LocationServices
+            .getFusedLocationProviderClient(context!!)
 
-        //check location permissions
-        val locationPermissionsGranted = isForegroundAndBackgroundPermissionGranted()
-
-        //Request permissions if not already granted. API 30 requires a request for
-        //foreground location ONLY, and then if granted, a request for background
-        //location
-        if (!locationPermissionsGranted) {
+        //Request foreground permission if not already granted. If granted, set
+        //device location on map
+        if (!isForegroundPermissionGranted()) {
             requestForegroundLocationPermission()
-        }
-
-        //Check that the device location settings is enabled and resolve this if not
-        checkDeviceLocationSettings()
-
-        if (locationPermissionsGranted) {
+        } else {
             setDeviceLocation(map)
         }
 
-        newMap.moveCamera(CameraUpdateFactory.newLatLngZoom(home, zoom))
+        //Check that the device location settings is enabled and resolve this if not.
+        //Also calls setDeviceLocation again if the settings were turned on
+        checkDeviceLocationSettings()
 
         setMapStyle(map)
 
-        //NOT WORKING TO BE RESOLVED
         map.uiSettings.isZoomControlsEnabled = true
 
         setPoiMarker(map)
@@ -116,14 +114,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         }
     }
 
-    //Check to see if permissions are granted or not. Returns TRUE if all needed
-    //permissions are already granted, of FALSE if permission needs to be requested
-    private fun isForegroundAndBackgroundPermissionGranted(): Boolean {
-        val foreground = isForegroundPermissionGranted()
-        val background = isBackgroundPermissionGranted()
-        return background && foreground
-    }
-
     //Check if foreground location permission already granted
     private fun isForegroundPermissionGranted(): Boolean {
         return (
@@ -135,37 +125,12 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                 )
     }
 
-    //Check if background location permission already granted
-    private fun isBackgroundPermissionGranted(): Boolean {
-        val backgroundLocationApproved = (
-                //Background location permission only required for Android Q and above
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(
-                        requireContext(),
-                        Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                    )
-                } else {
-                    true
-                }
-                )
-        return backgroundLocationApproved
-    }
-
     //Request foreground location permissions. Request for background location will
     //ONLY be made if foreground is granted
     private fun requestForegroundLocationPermission() {
         val permissionsArray = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
         val requestCode = REQUEST_FOREGROUND_ONLY
         requestPermissions(permissionsArray, requestCode)
-    }
-
-    //Background location will only be requested after foreground is granted, as this
-    //is now a requirement in API 30
-    @RequiresApi(Build.VERSION_CODES.Q)
-    private fun requestBackgroundLocationPosition() {
-        val permissionArray = arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-        val requestCode = REQUEST_BACKGROUND_ONLY
-        requestPermissions(permissionArray, requestCode)
     }
 
     //Respond to the permission request result. If Foreground request approved, request
@@ -181,7 +146,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             if (grantResults.isNotEmpty() && (grantResults[0] ==
                         PackageManager.PERMISSION_GRANTED)
             ) {
-                requestBackgroundLocationPosition()
+                setDeviceLocation(map)
             } else if (grantResults.isNotEmpty() && (grantResults[0] ==
                         PackageManager.PERMISSION_DENIED)
             ) {
@@ -189,24 +154,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                     requireContext(),
                     "App requires location permission. Check settings.",
                     Toast.LENGTH_SHORT
-                ).show()
-            }
-        } else if (requestCode == REQUEST_BACKGROUND_ONLY) {
-            if (grantResults.isNotEmpty() && (grantResults[0] ==
-                        PackageManager.PERMISSION_GRANTED)
-            ) {
-                Toast.makeText(
-                    requireContext(),
-                    "Background location permission granted",
-                    Toast.LENGTH_LONG
-                ).show()
-            } else if (grantResults.isNotEmpty() && (grantResults[0] ==
-                        PackageManager.PERMISSION_DENIED)
-            ) {
-                Toast.makeText(
-                    requireContext(),
-                    "App requires background location permission. Check settings.",
-                    Toast.LENGTH_LONG
                 ).show()
             }
         }
@@ -233,7 +180,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                         REQUEST_TURN_DEVICE_LOCATION_ON,
                         null, 0, 0, 0, null
                     )
-
                 } catch (sendEx: IntentSender.SendIntentException) {
                     Log.i("Location settings: ", "Error resolving" + sendEx.message)
                 }
@@ -247,6 +193,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         }
         responseTask.addOnSuccessListener {
             Log.i("Location settings: ", "Location enabled")
+            setDeviceLocation(map)
         }
     }
 
@@ -267,6 +214,22 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     @SuppressLint("MissingPermission")
     private fun setDeviceLocation(map: GoogleMap) {
         map.isMyLocationEnabled = true
+        val deviceLocation = fusedLocationProviderClient.lastLocation
+        deviceLocation.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val lastLocation = task.result
+                if (lastLocation != null) {
+                    map.moveCamera(
+                        (CameraUpdateFactory.newLatLngZoom(
+                            LatLng(lastLocation.latitude, lastLocation.longitude), zoom
+                        ))
+                    )
+                }
+            } else {
+                Log.i("Location: ", "Device location is null")
+                map.uiSettings.isMyLocationButtonEnabled = false
+            }
+        }
     }
 
     //Allow user to select any Lat/Lng as reminder location
