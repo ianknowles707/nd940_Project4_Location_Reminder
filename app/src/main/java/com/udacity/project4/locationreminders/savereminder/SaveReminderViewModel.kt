@@ -1,10 +1,9 @@
 package com.udacity.project4.locationreminders.savereminder
 
 import android.app.Application
-import android.util.Log
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.google.android.gms.location.GeofencingClient
 import com.google.android.gms.maps.model.PointOfInterest
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseViewModel
@@ -22,6 +21,11 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
     val selectedPOI = MutableLiveData<PointOfInterest>()
     val latitude = MutableLiveData<Double>()
     val longitude = MutableLiveData<Double>()
+
+    private var _dataSaved = MutableLiveData<Boolean>()
+
+    val dataSaved: LiveData<Boolean>
+        get() = _dataSaved
 
     companion object {
         const val GEOFENCE_AREA = 100f
@@ -47,8 +51,10 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
     fun validateAndSaveReminder(reminderData: ReminderDataItem) {
         if (validateEnteredData(reminderData)) {
             saveReminder(reminderData)
+            _dataSaved.value = true
         } else {
             showSnackBar
+            _dataSaved.value = false
         }
     }
 
@@ -89,8 +95,6 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
         }
 
         if (reminderData.location.isNullOrEmpty()) {
-            Log.i("TAG", "Location: ${reminderData.location}")
-
             showSnackBarInt.value = R.string.err_select_location
             return false
         }

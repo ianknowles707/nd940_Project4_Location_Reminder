@@ -20,6 +20,7 @@ import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingClient
 import com.google.android.gms.location.GeofencingRequest
 import com.google.android.gms.location.LocationServices
+import com.google.android.material.snackbar.Snackbar
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
 import com.udacity.project4.base.NavigationCommand
@@ -27,6 +28,7 @@ import com.udacity.project4.databinding.FragmentSaveReminderBinding
 import com.udacity.project4.locationreminders.reminderslist.ReminderDataItem
 import com.udacity.project4.locationreminders.savereminder.selectreminderlocation.SelectLocationFragment
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
+import kotlinx.android.synthetic.main.fragment_save_reminder.*
 import org.koin.android.ext.android.inject
 
 class SaveReminderFragment : BaseFragment() {
@@ -50,6 +52,7 @@ class SaveReminderFragment : BaseFragment() {
         return binding.root
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.lifecycleOwner = this
@@ -68,19 +71,32 @@ class SaveReminderFragment : BaseFragment() {
                 _viewModel.longitude.value
             )
             _viewModel.validateAndSaveReminder(reminderData)
-            if (requiredPermissionsAreGranted()) {
-                //setGeofenceForReminder()
-                Log.i("Permissions: ", "OK")
-            } else {
-                Log.i("Permission error: ", "Not granted")
+
+            //Check if location permission needs to be requested. If it does, show user
+            //a message first to tell them that it is needed for the app to function
+            if (_viewModel.dataSaved.value == true) {
+                val permissionSnackbar = Snackbar.make(
+                    layout_save_reminder,
+                    getString(R.string.background_location_permission_required),
+                    Snackbar.LENGTH_INDEFINITE
+                )
+                permissionSnackbar.setAction(getString(R.string.ok)) {
+                    permissionSnackbar.dismiss()
+                    if (!isForegroundPermissionGranted()) {
+                        requestForegroundLocationPermission()
+                    } else if (!isBackgroundPermissionGranted()) {
+                        requestBackgroundLocationPosition()
+                    }
+                }.show()
+                //setGeofenceForReminder(reminderData)
+                Log.i("Geofence: ", "Set here")
             }
         }
-
     }
 
-    private fun requiredPermissionsAreGranted() : Boolean{
-        val foreground=isForegroundPermissionGranted()
-        val background=isBackgroundPermissionGranted()
+    private fun requiredPermissionsAreGranted(): Boolean {
+        val foreground = isForegroundPermissionGranted()
+        val background = isBackgroundPermissionGranted()
         Log.i("Permissions: ", "Foreground: $foreground; Background: $background")
         return isForegroundPermissionGranted() &&
                 isBackgroundPermissionGranted()
@@ -143,7 +159,7 @@ class SaveReminderFragment : BaseFragment() {
             if (grantResults.isNotEmpty() && (grantResults[0] ==
                         PackageManager.PERMISSION_GRANTED)
             ) {
-                //requestBackgroundLocationPosition()
+                requestBackgroundLocationPosition()
             } else if (grantResults.isNotEmpty() && (grantResults[0] ==
                         PackageManager.PERMISSION_DENIED)
             ) {
@@ -225,4 +241,5 @@ class SaveReminderFragment : BaseFragment() {
         //make sure to clear the view model after destroy, as it's a single view model.
         _viewModel.onClear()
     }
+
 }
