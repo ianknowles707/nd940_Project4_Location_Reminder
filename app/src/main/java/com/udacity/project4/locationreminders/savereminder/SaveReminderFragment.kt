@@ -2,7 +2,6 @@ package com.udacity.project4.locationreminders.savereminder
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -25,6 +24,7 @@ import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
 import com.udacity.project4.base.NavigationCommand
 import com.udacity.project4.databinding.FragmentSaveReminderBinding
+import com.udacity.project4.locationreminders.geofence.GeofenceBroadcastReceiver
 import com.udacity.project4.locationreminders.reminderslist.ReminderDataItem
 import com.udacity.project4.locationreminders.savereminder.selectreminderlocation.SelectLocationFragment
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
@@ -88,19 +88,18 @@ class SaveReminderFragment : BaseFragment() {
                         requestBackgroundLocationPosition()
                     }
                 }.show()
-                //setGeofenceForReminder(reminderData)
-                Log.i("Geofence: ", "Set here")
+                setGeofenceForReminder(reminderData)
             }
         }
     }
 
-    private fun requiredPermissionsAreGranted(): Boolean {
-        val foreground = isForegroundPermissionGranted()
-        val background = isBackgroundPermissionGranted()
-        Log.i("Permissions: ", "Foreground: $foreground; Background: $background")
-        return isForegroundPermissionGranted() &&
-                isBackgroundPermissionGranted()
-    }
+//    private fun requiredPermissionsAreGranted(): Boolean {
+//        val foreground = isForegroundPermissionGranted()
+//        val background = isBackgroundPermissionGranted()
+//        Log.i("Permissions: ", "Foreground: $foreground; Background: $background")
+//        return isForegroundPermissionGranted() &&
+//                isBackgroundPermissionGranted()
+//    }
 
     //Check if foreground location permission already granted
     private fun isForegroundPermissionGranted(): Boolean {
@@ -193,8 +192,9 @@ class SaveReminderFragment : BaseFragment() {
     @SuppressLint("MissingPermission")
     private fun setGeofenceForReminder(reminderData: ReminderDataItem) {
 
-        geofencingClient = LocationServices.getGeofencingClient(Activity())
+        geofencingClient = LocationServices.getGeofencingClient(activity!!)
 
+        //Create the geofence
         val geofenceForReminder = Geofence.Builder()
             .setRequestId(reminderData.id)
             .setCircularRegion(
@@ -206,20 +206,22 @@ class SaveReminderFragment : BaseFragment() {
             .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
             .build()
 
+        //Use geofencingRequest to add geofence
         val geofencingRequest = GeofencingRequest.Builder()
             .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
             .addGeofence(geofenceForReminder)
             .build()
 
+        //Create the pending intent for action when the geofence is triggered
         val geofencePendingIntent: PendingIntent by lazy {
-            val intent = Intent()
-            PendingIntent.getBroadcast(Activity(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+            val intent = Intent(activity!!, GeofenceBroadcastReceiver::class.java)
+            PendingIntent.getBroadcast(activity!!, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
         }
 
         geofencingClient.addGeofences(geofencingRequest, geofencePendingIntent)?.run {
             addOnSuccessListener {
                 Toast.makeText(
-                    Activity(), "Geofence added to reminder location",
+                    activity!!, "Geofence added to reminder location",
                     Toast.LENGTH_SHORT
                 )
                     .show()
@@ -227,7 +229,7 @@ class SaveReminderFragment : BaseFragment() {
 
             addOnFailureListener {
                 Toast.makeText(
-                    Activity(), "Geofence failed",
+                    activity!!, "Geofence failed",
                     Toast.LENGTH_SHORT
                 )
                     .show()
