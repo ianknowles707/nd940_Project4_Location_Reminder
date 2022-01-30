@@ -21,8 +21,10 @@
     <string name="dropped_pin">Selected Location</string>
     <string name="poi">poi</string>
     <string name="location_required_error">Location services must be enabled to use the app</string>
-    <string name="background_location_permission_required">Location reminder function requires foreground and background location permissions</string>
-    <string name="permission_denied_explanation">You need to grant location permission in order to select the location.</string>
+    <string name="permission_denied_explanation">You need to grant location permission for this app to function.</string>
+    <string name="background_permission_denied">App requires background location permission.</string>
+    <string name="foreground_permission_granted">Foreground location permission granted</string>
+    <string name="background_permission_granted">Background location permission granted</string>
     <string name="settings">Settings</string>
     <string name="ok">OK</string>
     <string name="select_poi">Please select a point of interest</string>
@@ -49,4 +51,5 @@
     <string name="email_provider">Sign in with email</string>
     <string name="night_city_image_description">night_city_image</string>
     <string name="reminder_details">Reminder Details</string>
+    <string name="error_saving_data">Reminder data not saved - try again</string>
 </resources>

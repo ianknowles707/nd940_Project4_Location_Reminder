@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.JobIntentService
 import com.google.android.gms.location.Geofence
+import com.google.android.gms.location.GeofencingEvent
 import com.udacity.project4.locationreminders.data.dto.ReminderDTO
 import com.udacity.project4.locationreminders.data.dto.Result
 import com.udacity.project4.locationreminders.data.local.RemindersLocalRepository
@@ -36,31 +37,36 @@ class GeofenceTransitionsJobIntentService : JobIntentService(), CoroutineScope {
         //TODO: handle the geofencing transition events and
         // send a notification to the user when he enters the geofence area
         //TODO call @sendNotification
+        val geofencingEvent = GeofencingEvent.fromIntent(intent)
+        val triggeringGeofences = geofencingEvent.triggeringGeofences
+        sendNotification(triggeringGeofences)
     }
 
     //TODO: get the request id of the current geofence
     private fun sendNotification(triggeringGeofences: List<Geofence>) {
-        val requestId = ""
+        for (i in triggeringGeofences.indices) {
+            val requestId = triggeringGeofences[i].requestId
 
-        //Get the local repository instance
-        val remindersLocalRepository: RemindersLocalRepository by inject()
+            //Get the local repository instance
+            val remindersLocalRepository: RemindersLocalRepository by inject()
 //        Interaction to the repository has to be through a coroutine scope
-        CoroutineScope(coroutineContext).launch(SupervisorJob()) {
-            //get the reminder with the request id
-            val result = remindersLocalRepository.getReminder(requestId)
-            if (result is Result.Success<ReminderDTO>) {
-                val reminderDTO = result.data
-                //send a notification to the user with the reminder details
-                sendNotification(
-                    this@GeofenceTransitionsJobIntentService, ReminderDataItem(
-                        reminderDTO.title,
-                        reminderDTO.description,
-                        reminderDTO.location,
-                        reminderDTO.latitude,
-                        reminderDTO.longitude,
-                        reminderDTO.id
+            CoroutineScope(coroutineContext).launch(SupervisorJob()) {
+                //get the reminder with the request id
+                val result = remindersLocalRepository.getReminder(requestId)
+                if (result is Result.Success<ReminderDTO>) {
+                    val reminderDTO = result.data
+                    //send a notification to the user with the reminder details
+                    sendNotification(
+                        this@GeofenceTransitionsJobIntentService, ReminderDataItem(
+                            reminderDTO.title,
+                            reminderDTO.description,
+                            reminderDTO.location,
+                            reminderDTO.latitude,
+                            reminderDTO.longitude,
+                            reminderDTO.id
+                        )
                     )
-                )
+                }
             }
         }
     }
