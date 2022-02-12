@@ -9,6 +9,7 @@ import com.udacity.project4.R
 import com.udacity.project4.databinding.ActivityReminderDescriptionBinding
 import com.udacity.project4.locationreminders.reminderslist.ReminderDataItem
 
+
 /**
  * Activity that displays the reminder details after the user clicks on the notification
  */
@@ -32,6 +33,10 @@ class ReminderDescriptionActivity : AppCompatActivity() {
             this,
             R.layout.activity_reminder_description
         )
-//        TODO: Add the implementation of the reminder details
+
+        val reminderData: ReminderDataItem =
+            intent.getSerializableExtra(EXTRA_ReminderDataItem) as ReminderDataItem
+            binding.textReminderTitle.text=reminderData.title
+            binding.tectReminderDescription.text=reminderData.description
     }
 }

@@ -52,4 +52,5 @@
     <string name="night_city_image_description">night_city_image</string>
     <string name="reminder_details">Reminder Details</string>
     <string name="error_saving_data">Reminder data not saved - try again</string>
+    <string name="exclamation_mark">Exclamation mark</string>
 </resources>
