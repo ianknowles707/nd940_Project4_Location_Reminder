@@ -7,12 +7,10 @@ import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.content.res.Resources
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.*
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.databinding.DataBindingUtil
 import com.google.android.gms.common.api.ResolvableApiException
@@ -69,24 +67,22 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         return binding.root
     }
 
-    //Set up the map - initially just define a position for start
+    //Set up the map
     override fun onMapReady(newMap: GoogleMap) {
 
         map = newMap
-        fusedLocationProviderClient = LocationServices
-            .getFusedLocationProviderClient(context!!)
 
         //Request foreground permission if not already granted. If granted, set
-        //device location on map
+        //device location on map.
+        //NOTE: Background location permission is not required at this stage and is
+        //not requested here.
         if (!isForegroundPermissionGranted()) {
             requestForegroundLocationPermission()
         } else {
-            setDeviceLocation(map)
+            //Check that the device location settings is enabled and resolve this if not.
+            //Also calls setDeviceLocation again if the settings were turned on
+            checkDeviceLocationSettings()
         }
-
-        //Check that the device location settings is enabled and resolve this if not.
-        //Also calls setDeviceLocation again if the settings were turned on
-        checkDeviceLocationSettings()
 
         setMapStyle(map)
 
@@ -135,7 +131,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
     //Respond to the permission request result. If Foreground request approved, request
     //background. If not, show message that it is needed for app functionality
-    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -146,7 +141,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             if (grantResults.isNotEmpty() && (grantResults[0] ==
                         PackageManager.PERMISSION_GRANTED)
             ) {
-                setDeviceLocation(map)
+                checkDeviceLocationSettings()
             } else if (grantResults.isNotEmpty() && (grantResults[0] ==
                         PackageManager.PERMISSION_DENIED)
             ) {
@@ -213,6 +208,8 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     //Called from a permission check so does not need to do another permission check here
     @SuppressLint("MissingPermission")
     private fun setDeviceLocation(map: GoogleMap) {
+        fusedLocationProviderClient =
+            LocationServices.getFusedLocationProviderClient(activity!!)
         map.isMyLocationEnabled = true
         val deviceLocation = fusedLocationProviderClient.lastLocation
         deviceLocation.addOnCompleteListener { task ->
