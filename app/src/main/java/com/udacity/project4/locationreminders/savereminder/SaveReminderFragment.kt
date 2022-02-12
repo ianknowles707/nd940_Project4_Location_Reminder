@@ -235,6 +235,7 @@ class SaveReminderFragment : BaseFragment() {
                 Log.i("Geofence: ", "Error: ${it.message}")
             }
         }
+
     }
 
 

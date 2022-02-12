@@ -53,4 +53,5 @@
     <string name="reminder_details">Reminder Details</string>
     <string name="error_saving_data">Reminder data not saved - try again</string>
     <string name="exclamation_mark">Exclamation mark</string>
+    <string name="error_removing_geofence">Error removing reminder Geofence</string>
 </resources>
